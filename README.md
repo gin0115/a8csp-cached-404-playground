@@ -5,7 +5,7 @@
 `blueprint.json` builds:
 
 - WordPress (latest) on PHP 8.4, logged in as `admin`, with `/%postname%/` permalinks;
-- WooCommerce and Query Monitor, active;
+- WooCommerce and Query Monitor, active, with WooCommerce's coming soon mode off;
 - Polylang and TranslatePress, installed but not active (turn on one at a time);
 - WooCommerce's sample products, with their categories and tags;
 - `a8csp-cached-404-page.zip` (1.0.0-RC3) unzipped into `wp-content/mu-plugins/`, with `a8csp-cached-404-page-loader.php` beside it to load it.

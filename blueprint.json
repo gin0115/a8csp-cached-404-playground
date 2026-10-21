@@ -63,6 +63,12 @@
 			}
 		},
 		{
+			"step": "setSiteOptions",
+			"options": {
+				"woocommerce_coming_soon": "no"
+			}
+		},
+		{
 			"step": "unzip",
 			"zipFile": {
 				"resource": "url",
