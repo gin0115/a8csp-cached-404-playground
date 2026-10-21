@@ -76,8 +76,8 @@
 			"data": "<?php\n\\defined( 'ABSPATH' ) || exit;\n\nrequire_once WPMU_PLUGIN_DIR . '/a8csp-cached-404-page/a8csp-cached-404-page.php';\n"
 		},
 		{
-			"step": "wp-cli",
-			"command": "wp rewrite structure /%postname%/"
+			"step": "runPHP",
+			"code": "<?php\nrequire '/wordpress/wp-load.php';\n$GLOBALS['wp_rewrite']->set_permalink_structure( '/%postname%/' );\nflush_rewrite_rules();\n"
 		}
 	]
 }
