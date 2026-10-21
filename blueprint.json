@@ -1,0 +1,83 @@
+{
+	"$schema": "https://playground.wordpress.net/blueprint-schema.json",
+	"meta": {
+		"title": "A8csp Cached 404 Page test site",
+		"description": "WordPress with WooCommerce, sample products and A8csp Cached 404 Page as a must-use plugin.",
+		"author": "gin0115"
+	},
+	"landingPage": "/wp-admin/options-general.php?page=a8csp-cached-404",
+	"preferredVersions": {
+		"php": "8.4",
+		"wp": "latest"
+	},
+	"features": {
+		"networking": true
+	},
+	"login": true,
+	"steps": [
+		{
+			"step": "installPlugin",
+			"pluginData": {
+				"resource": "wordpress.org/plugins",
+				"slug": "woocommerce"
+			},
+			"options": {
+				"activate": true
+			}
+		},
+		{
+			"step": "installPlugin",
+			"pluginData": {
+				"resource": "wordpress.org/plugins",
+				"slug": "query-monitor"
+			},
+			"options": {
+				"activate": true
+			}
+		},
+		{
+			"step": "installPlugin",
+			"pluginData": {
+				"resource": "wordpress.org/plugins",
+				"slug": "polylang"
+			},
+			"options": {
+				"activate": false
+			}
+		},
+		{
+			"step": "installPlugin",
+			"pluginData": {
+				"resource": "wordpress.org/plugins",
+				"slug": "translatepress-multilingual"
+			},
+			"options": {
+				"activate": false
+			}
+		},
+		{
+			"step": "importWxr",
+			"file": {
+				"resource": "url",
+				"url": "https://raw.githubusercontent.com/woocommerce/woocommerce/trunk/plugins/woocommerce/sample-data/sample_products.xml"
+			}
+		},
+		{
+			"step": "unzip",
+			"zipFile": {
+				"resource": "url",
+				"url": "https://raw.githubusercontent.com/gin0115/a8csp-cached-404-playground/main/a8csp-cached-404-page.zip"
+			},
+			"extractToPath": "/wordpress/wp-content/mu-plugins"
+		},
+		{
+			"step": "writeFile",
+			"path": "/wordpress/wp-content/mu-plugins/a8csp-cached-404-page-loader.php",
+			"data": "<?php\n\\defined( 'ABSPATH' ) || exit;\n\nrequire_once WPMU_PLUGIN_DIR . '/a8csp-cached-404-page/a8csp-cached-404-page.php';\n"
+		},
+		{
+			"step": "wp-cli",
+			"command": "wp rewrite structure /%postname%/"
+		}
+	]
+}
