@@ -1,67 +1,99 @@
 <?php
 /**
  * Plugin Name: A8csp Cached 404 test links
- * Description: A Dashboard widget of links to try A8csp Cached 404 with, saying what each should get from the current settings and checking it live, and a late redirect that loose mode breaks.
+ * Description: A Dashboard widget with a link for every URL pattern A8csp Cached 404 knows on this site, each saying what the current settings should give it, and a late redirect that loose mode breaks.
  */
 
 use A8C\SpecialProjects\A8cspCached404Page\Settings\Settings;
 
 defined( 'ABSPATH' ) || exit;
 
-// A late redirect, made just in time on template_redirect the way redirect plugins do it.
+/**
+ * The late redirects: one top-level, and one under every URL type's base.
+ *
+ * @return list<string> The paths that redirect to /shop/.
+ */
+function a8csp_test_links_redirects(): array {
+	$paths = array( '/give-something-like-this/' );
+	if ( class_exists( Settings::class ) ) {
+		foreach ( Settings::load()->shortcuts() as $type ) {
+			$paths[] = a8csp_test_links_path( $type, 'this-redirects' );
+		}
+	}
+
+	return $paths;
+}
+
+// Late redirects, made just in time on template_redirect the way redirect plugins do it.
 add_action(
 	'template_redirect',
 	static function (): void {
-		$home    = trailingslashit( (string) wp_parse_url( home_url( '/' ), PHP_URL_PATH ) );
+		$home    = untrailingslashit( (string) wp_parse_url( home_url( '/' ), PHP_URL_PATH ) );
 		$request = trailingslashit( (string) wp_parse_url( isset( $_SERVER['REQUEST_URI'] ) ? (string) $_SERVER['REQUEST_URI'] : '', PHP_URL_PATH ) );
-		if ( $home . 'give-something-like-this/' === $request ) {
-			wp_safe_redirect( home_url( '/shop/' ), 301 );
-			exit;
+		foreach ( a8csp_test_links_redirects() as $path ) {
+			if ( $home . $path === $request ) {
+				wp_safe_redirect( home_url( '/shop/' ), 301 );
+				exit;
+			}
 		}
 	}
 );
 
 /**
- * What a link should get with the saved settings: `early:<header>`, `native` or `redirect`.
+ * A URL type's address with a made-up slug, such as /tag/this-is-a-cached-404/.
  *
- * @param Settings    $settings The saved settings.
- * @param string      $path     The link's path.
- * @param string|null $shortcut The URL type that answers it, or null for loose mode only.
- * @param bool        $redirect Whether WordPress redirects it.
+ * @param array<string, mixed> $type The URL type, from Settings::shortcuts().
+ * @param string               $slug The slug.
  *
- * @return array{0: string, 1: string} The expected result and why.
+ * @return string
  */
-function a8csp_test_links_expect( Settings $settings, string $path, ?string $shortcut, bool $redirect ): array {
-	$wordpress = $redirect ? array( 'redirect', 'Redirected to /shop/ by the late redirect.' ) : array( 'native', 'WordPress 404.' );
-
-	if ( ! $settings->is_enabled() ) {
-		return array( $wordpress[0], $wordpress[1] . ' The plugin is off.' );
+function a8csp_test_links_path( array $type, string $slug ): string {
+	if ( 'post' === $type['type'] ) {
+		return '/' . str_replace(
+			array( '%year%', '%monthnum%', '%day%', '%hour%', '%minute%', '%second%', '%postname%' ),
+			array( '2024', '01', '31', '09', '30', '00', $slug ),
+			(string) $type['base']
+		) . '/';
 	}
 
+	return '/' . $type['base'] . '/' . $slug . '/';
+}
+
+/**
+ * What the saved settings should give a link.
+ *
+ * @param Settings $settings The saved settings.
+ * @param string   $path     The link's path.
+ * @param bool     $type_on  Whether the URL type that answers it is ticked.
+ * @param bool     $loose    Whether loose mode answers it: a post-like address, not an archive.
+ * @param string   $native   What it gets when the plugin leaves it to WordPress.
+ *
+ * @return string
+ */
+function a8csp_test_links_expected( Settings $settings, string $path, bool $type_on, bool $loose, string $native ): string {
+	// Off: everything goes to WordPress.
+	if ( ! $settings->is_enabled() ) {
+		return $native;
+	}
+
+	// Under Never answer: goes to WordPress.
 	foreach ( $settings->excluded() as $excluded ) {
 		if ( str_starts_with( $path, $excluded ) ) {
-			return array( $wordpress[0], $wordpress[1] . ' It is under Never answer.' );
+			return $native;
 		}
 	}
 
-	if ( null !== $shortcut ) {
-		$types = $settings->shortcuts();
-		if ( ! isset( $types[ $shortcut ] ) ) {
-			return array( $wordpress[0], $wordpress[1] . ' This site has no ' . $shortcut . ' URL type.' );
-		}
-		if ( $types[ $shortcut ]['enabled'] ) {
-			return array( 'early:' . $shortcut, 'Cached 404: ' . $types[ $shortcut ]['label'] . ' is ticked.' );
-		}
-		if ( ! $settings->loose() ) {
-			return array( $wordpress[0], $wordpress[1] . ' ' . $types[ $shortcut ]['label'] . ' is not ticked.' );
-		}
+	// Its URL type is ticked: cached.
+	if ( $type_on ) {
+		return 'Cached 404';
 	}
 
-	if ( $settings->loose() ) {
-		return array( 'early:loose', 'Cached 404: loose mode is on.' . ( $redirect ? ' The redirect never runs. Add the path under Never answer to fix it.' : '' ) );
+	// Loose mode is on and covers this address: cached.
+	if ( $loose && $settings->loose() ) {
+		return 'Cached 404';
 	}
 
-	return array( $wordpress[0], $wordpress[1] . ( null === $shortcut ? ' Loose mode is off, and it could be a page.' : '' ) );
+	return $native;
 }
 
 add_action(
@@ -76,43 +108,41 @@ add_action(
 			'Cached 404 test links',
 			static function (): void {
 				$settings = Settings::load();
-				$links    = array(
-					array( '/product/this-is-a-cached-404/', 'post_type:product', false ),
-					array( '/product-category/this-is-a-cached-404/', 'taxonomy:product_cat', false ),
-					array( '/tag/this-is-a-cached-404/', 'taxonomy:post_tag', false ),
-					array( '/this-might-be-a-page/', null, false ),
-					array( '/give-something-like-this/', null, true ),
-				);
+				$rows     = array();
 
-				echo '<p>Now: the plugin is <strong>' . ( $settings->is_enabled() ? 'on' : 'off' ) . '</strong>, loose mode is <strong>' . ( $settings->loose() ? 'on' : 'off' ) . '</strong>. Change them under <a href="' . esc_url( admin_url( 'options-general.php?page=a8csp-cached-404' ) ) . '">Settings → Cached 404</a>, then reload this page.</p>';
-				echo '<ul class="a8csp-test-links">';
-				foreach ( $links as list( $path, $shortcut, $redirect ) ) {
-					list( $expect, $why ) = a8csp_test_links_expect( $settings, $path, $shortcut, $redirect );
-					echo '<li data-expect="' . esc_attr( $expect ) . '"><a href="' . esc_url( home_url( $path ) ) . '" target="_blank" rel="noopener"><code>' . esc_html( $path ) . '</code></a><br />';
-					echo '<span class="description">Should get: ' . esc_html( $why ) . '</span><br />';
-					echo '<strong data-result>Checking…</strong></li>';
+				// One made-up address for every URL type the plugin knows on this site.
+				foreach ( $settings->shortcuts() as $type ) {
+					$single = in_array( $type['type'], array( 'post_type', 'post' ), true );
+					$path   = a8csp_test_links_path( $type, 'this-is-a-cached-404' );
+					$rows[] = array( $type['label'], $path, $type['enabled'], $single, 'Native 404' );
+					$rows[] = array( $type['label'] . ', late redirect to /shop/', a8csp_test_links_path( $type, 'this-redirects' ), $type['enabled'], $single, 'Not 404' );
+
+					// Made-up paths after a real single item; nested types take extra parts as their own items.
+					if ( $single && empty( $type['hierarchical'] ) ) {
+						$item = get_posts(
+							array(
+								'post_type'   => 'post' === $type['type'] ? 'post' : $type['name'],
+								'numberposts' => 1,
+								'post_status' => 'publish',
+							)
+						);
+						if ( array() !== $item ) {
+							$extra  = a8csp_test_links_path( $type, $item[0]->post_name ) . 'made-up-thing/';
+							$rows[] = array( $type['label'] . ', made-up path after a real one', $extra, $type['enabled'] && $settings->extra_segments(), true, 'Native 404' );
+						}
+					}
+				}
+
+				$rows[] = array( 'A missing page', '/this-might-be-a-page/', false, true, 'Native 404' );
+				$rows[] = array( 'A missing page, late redirect to /shop/', '/give-something-like-this/', false, true, 'Not 404' );
+
+				echo '<ul>';
+				foreach ( $rows as list( $label, $path, $type_on, $loose, $native ) ) {
+					echo '<li><strong>' . esc_html( $label ) . '</strong><br />';
+					echo '<a href="' . esc_url( home_url( $path ) ) . '" target="_blank" rel="noopener"><code>' . esc_html( $path ) . '</code></a><br />';
+					echo 'EXPECTED: ' . esc_html( a8csp_test_links_expected( $settings, $path, (bool) $type_on, $loose, $native ) ) . '</li>';
 				}
 				echo '</ul>';
-				?>
-				<script>
-				document.querySelectorAll( '.a8csp-test-links [data-expect]' ).forEach( async ( item ) => {
-					const result = item.querySelector( '[data-result]' );
-					try {
-						const response = await fetch( item.querySelector( 'a' ).href, { method: 'HEAD', cache: 'no-store' } );
-						const header = response.headers.get( 'x-a8csp-404' ) || '';
-						const got = response.redirected ? 'redirect' : ( header ? 'early:' + header : 'native' );
-						const text = response.redirected
-							? 'Got: redirected to ' + new URL( response.url ).pathname
-							: ( header ? 'Got: cached 404 (X-A8CSP-404: ' + header + ')' : 'Got: WordPress, status ' + response.status );
-						const matched = got === item.dataset.expect;
-						result.textContent = text + ( matched ? ', as expected.' : ', NOT as expected.' );
-						result.style.color = matched ? '#007017' : '#d63638';
-					} catch ( error ) {
-						result.textContent = 'Could not check.';
-					}
-				} );
-				</script>
-				<?php
 			}
 		);
 	}
