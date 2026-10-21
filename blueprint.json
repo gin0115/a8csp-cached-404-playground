@@ -81,10 +81,10 @@
 		},
 		{
 			"step": "writeFile",
-			"path": "/wordpress/wp-content/mu-plugins/a8csp-test-links.php",
+			"path": "/wordpress/wp-content/mu-plugins/a8csp-test-links-v2.php",
 			"data": {
 				"resource": "url",
-				"url": "https://raw.githubusercontent.com/gin0115/a8csp-cached-404-playground/main/mu-plugins/a8csp-test-links.php"
+				"url": "https://raw.githubusercontent.com/gin0115/a8csp-cached-404-playground/main/mu-plugins/a8csp-test-links-v2.php"
 			}
 		},
 		{
