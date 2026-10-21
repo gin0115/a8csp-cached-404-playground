@@ -63,10 +63,8 @@
 			}
 		},
 		{
-			"step": "setSiteOptions",
-			"options": {
-				"woocommerce_coming_soon": "no"
-			}
+			"step": "runPHP",
+			"code": "<?php\nrequire '/wordpress/wp-load.php';\ndelete_transient( '_wc_activation_redirect' );\n$profile = (array) get_option( 'woocommerce_onboarding_profile', array() );\n$profile['completed'] = true;\nupdate_option( 'woocommerce_onboarding_profile', $profile );\nupdate_option( 'woocommerce_coming_soon', 'no' );\nupdate_option( 'woocommerce_store_pages_only', 'no' );\nupdate_option( 'woocommerce_task_list_hidden_lists', array( 'setup', 'extended' ) );\nupdate_option( 'woocommerce_task_list_completed_lists', array( 'setup' ) );\n"
 		},
 		{
 			"step": "unzip",
