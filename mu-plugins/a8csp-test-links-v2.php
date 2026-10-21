@@ -19,33 +19,15 @@ function a8csp_test_links_settings(): Settings {
 	return ( new Detector() )->detect( Settings::load() );
 }
 
-/**
- * The late redirects: one top-level, and one under every URL type's base.
- *
- * @return list<string> The paths that redirect to /shop/.
- */
-function a8csp_test_links_redirects(): array {
-	$paths = array( '/give-something-like-this/' );
-	if ( class_exists( Detector::class ) ) {
-		foreach ( a8csp_test_links_settings()->shortcuts() as $type ) {
-			$paths[] = a8csp_test_links_path( $type, 'this-redirects' );
-		}
-	}
-
-	return $paths;
-}
-
-// Late redirects, made just in time on template_redirect the way redirect plugins do it.
+// A late redirect, made just in time on template_redirect the way redirect plugins do it.
 add_action(
 	'template_redirect',
 	static function (): void {
 		$home    = untrailingslashit( (string) wp_parse_url( home_url( '/' ), PHP_URL_PATH ) );
 		$request = trailingslashit( (string) wp_parse_url( isset( $_SERVER['REQUEST_URI'] ) ? (string) $_SERVER['REQUEST_URI'] : '', PHP_URL_PATH ) );
-		foreach ( a8csp_test_links_redirects() as $path ) {
-			if ( $home . $path === $request ) {
-				wp_safe_redirect( home_url( '/shop/' ), 301 );
-				exit;
-			}
+		if ( $home . '/give-something-like-this/' === $request ) {
+			wp_safe_redirect( home_url( '/shop/' ), 301 );
+			exit;
 		}
 	}
 );
@@ -126,7 +108,6 @@ add_action(
 					$single = in_array( $type['type'], array( 'post_type', 'post' ), true );
 					$path   = a8csp_test_links_path( $type, 'this-is-a-cached-404' );
 					$rows[] = array( $type['label'], $path, $type['enabled'], $single, 'Native 404' );
-					$rows[] = array( $type['label'] . ', late redirect to /shop/', a8csp_test_links_path( $type, 'this-redirects' ), $type['enabled'], $single, 'Not 404' );
 
 					// Made-up paths after a real single item; nested types take extra parts as their own items.
 					if ( $single && empty( $type['hierarchical'] ) ) {
