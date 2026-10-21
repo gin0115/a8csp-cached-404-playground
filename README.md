@@ -8,7 +8,7 @@
 - WooCommerce and Query Monitor, active, with WooCommerce marked as set up: no setup wizard, task lists hidden, and the store live (coming soon mode off);
 - Polylang and TranslatePress, installed but not active (turn on one at a time);
 - WooCommerce's sample products, with their categories and tags;
-- `a8csp-cached-404-page.zip` (1.0.0-RC3) unzipped into `wp-content/mu-plugins/`, with `a8csp-cached-404-page-loader.php` beside it to load it.
+- `a8csp-cached-404-page.zip` (1.0.0-RC4) unzipped into `wp-content/mu-plugins/`, with `a8csp-cached-404-page-loader.php` beside it to load it.
 
 It opens on **Settings → Cached 404**. The plugin does nothing until it is turned on there and a URL type is ticked.
 
