@@ -4,9 +4,20 @@
  * Description: A Dashboard widget with a link for every URL pattern A8csp Cached 404 knows on this site, each saying what the current settings should give it, and a late redirect that loose mode breaks.
  */
 
+use A8C\SpecialProjects\A8cspCached404Page\Detection\Detector;
 use A8C\SpecialProjects\A8cspCached404Page\Settings\Settings;
 
 defined( 'ABSPATH' ) || exit;
+
+/**
+ * The saved settings with this site's URL types detected now, as the settings page shows them.
+ * Detected types are only stored when a box is saved, so a new site has none stored.
+ *
+ * @return Settings
+ */
+function a8csp_test_links_settings(): Settings {
+	return ( new Detector() )->detect( Settings::load() );
+}
 
 /**
  * The late redirects: one top-level, and one under every URL type's base.
@@ -15,8 +26,8 @@ defined( 'ABSPATH' ) || exit;
  */
 function a8csp_test_links_redirects(): array {
 	$paths = array( '/give-something-like-this/' );
-	if ( class_exists( Settings::class ) ) {
-		foreach ( Settings::load()->shortcuts() as $type ) {
+	if ( class_exists( Detector::class ) ) {
+		foreach ( a8csp_test_links_settings()->shortcuts() as $type ) {
 			$paths[] = a8csp_test_links_path( $type, 'this-redirects' );
 		}
 	}
@@ -107,7 +118,7 @@ add_action(
 			'a8csp_test_links',
 			'Cached 404 test links',
 			static function (): void {
-				$settings = Settings::load();
+				$settings = a8csp_test_links_settings();
 				$rows     = array();
 
 				// One made-up address for every URL type the plugin knows on this site.
