@@ -80,6 +80,14 @@
 			"data": "<?php\n\\defined( 'ABSPATH' ) || exit;\n\nrequire_once WPMU_PLUGIN_DIR . '/a8csp-cached-404-page/a8csp-cached-404-page.php';\n"
 		},
 		{
+			"step": "writeFile",
+			"path": "/wordpress/wp-content/mu-plugins/a8csp-test-links.php",
+			"data": {
+				"resource": "url",
+				"url": "https://raw.githubusercontent.com/gin0115/a8csp-cached-404-playground/main/mu-plugins/a8csp-test-links.php"
+			}
+		},
+		{
 			"step": "runPHP",
 			"code": "<?php\nrequire '/wordpress/wp-load.php';\n$GLOBALS['wp_rewrite']->set_permalink_structure( '/%postname%/' );\nflush_rewrite_rules();\n"
 		}
