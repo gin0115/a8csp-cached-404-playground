@@ -70,7 +70,7 @@
 			"step": "unzip",
 			"zipFile": {
 				"resource": "url",
-				"url": "https://raw.githubusercontent.com/gin0115/a8csp-cached-404-playground/b1ae8440103c96eed003740d1d997313bf4a002d/a8csp-cached-404-page.zip"
+				"url": "https://raw.githubusercontent.com/gin0115/a8csp-cached-404-playground/07ce81d4874c412401dd09692df3f681cd7382b8/a8csp-cached-404-page.zip"
 			},
 			"extractToPath": "/wordpress/wp-content/mu-plugins"
 		},
